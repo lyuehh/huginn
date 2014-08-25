@@ -15,7 +15,7 @@
           <li><a href="#logs" data-toggle="tab" data-agent-id="<%= @agent.id %>" class='<%= @agent.recent_error_logs? ? 'recent-errors' : '' %>'><span class='glyphicon glyphicon-list-alt'></span> Logs</a></li>
 
           <% if @agent.can_create_events? && @agent.events.count > 0 %>
-            <li><%= link_to '<span class="glyphicon glyphicon-random"></span> Events'.html_safe, events_path(:agent => @agent.to_param) %></li>
+            <li><%= link_to '<span class="glyphicon glyphicon-random"></span> Events'.html_safe, agent_events_path(@agent) %></li>
           <% else %>
             <li class='disabled'><a><span class='glyphicon glyphicon-random'></span> Events</a></li>
           <% end %>
@@ -103,15 +103,15 @@
             <% if @agent.can_create_events? %>
               <p>
                 <b>Events created:</b>
-                <%= link_to @agent.events.count, events_path(:agent => @agent.to_param) %>
+                <%= link_to @agent.events.count, agent_events_path(@agent) %>
               </p>
             <% end %>
 
             <% if @agent.can_receive_events? %>
               <p>
                 <b>Event sources:</b>
-                <% if @agent.sources.length %>
-                  <%= @agent.sources.map { |source_agent| link_to(source_agent.name, agent_path(source_agent)) }.to_sentence.html_safe %>
+                <% if (agents = @agent.sources).length > 0 %>
+                  <%= agents.map { |agent| link_to(agent.name, agent_path(agent)) }.to_sentence.html_safe %>
                 <% else %>
                   None
                 <% end %>
@@ -126,8 +126,8 @@
             <% if @agent.can_create_events? %>
               <p>
                 <b>Event receivers:</b>
-                <% if @agent.receivers.length %>
-                  <%= @agent.receivers.map { |receiver_agent| link_to(receiver_agent.name, agent_path(receiver_agent)) }.to_sentence.html_safe %>
+                <% if (agents = @agent.receivers).length > 0 %>
+                  <%= agents.map { |agent| link_to(agent.name, agent_path(agent)) }.to_sentence.html_safe %>
                 <% else %>
                   None
                 <% end %>

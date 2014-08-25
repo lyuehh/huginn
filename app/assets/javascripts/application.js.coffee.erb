@@ -6,6 +6,7 @@
 #= require json2
 #= require jquery.json-editor
 #= require latlon_and_geo
+#= require spectrum
 #= require ./worker-checker
 #= require_self
 
@@ -60,6 +61,10 @@ showEventDescriptions = ->
     $(".event-descriptions").html("").hide()
 
 $(document).ready ->
+  $('.navbar .dropdown.dropdown-hover').hover \
+    -> $(this).addClass('open'),
+    -> $(this).removeClass('open')
+
   # JSON Editor
   window.jsonEditor = setupJsonEditor()[0]
 
@@ -68,7 +73,7 @@ $(document).ready ->
     setTimeout((-> $(".flash").slideUp(-> $(".flash").remove())), 5000)
 
   # Help popovers
-  $('.hover-help').popover(trigger: 'hover')
+  $('.hover-help').popover(trigger: 'hover', html: true)
 
   # Agent Navigation
   $agentNavigate = $('#agent-navigate')

@@ -1,10 +1,9 @@
 require 'nokogiri'
-require 'faraday'
-require 'faraday_middleware'
 require 'date'
 
 module Agents
   class WebsiteAgent < Agent
+    include WebRequestConcern
 
     default_schedule "every_12h"
 
@@ -18,17 +17,19 @@ module Agents
 
       `url` can be a single url, or an array of urls (for example, for multiple pages with the exact same structure but different content to scrape)
 
-      The `type` value can be `xml`, `html`, or `json`.
+      The `type` value can be `xml`, `html`, `json`, or `text`.
 
       To tell the Agent how to parse the content, specify `extract` as a hash with keys naming the extractions and values of hashes.
 
-      When parsing HTML or XML, these sub-hashes specify how to extract with either a `css` CSS selector or a `xpath` XPath expression and either `"text": true` or `attr` pointing to an attribute name to grab.  An example:
+      When parsing HTML or XML, these sub-hashes specify how each extraction should be done.  The Agent first selects a node set from the document for each extraction key by evaluating either a CSS selector in `css` or an XPath expression in `xpath`.  It then evaluates an XPath expression in `value` on each node in the node set, converting the result into string.  Here's an example:
 
           "extract": {
-            "url": { "css": "#comic img", "attr": "src" },
-            "title": { "css": "#comic img", "attr": "title" },
-            "body_text": { "css": "div.main", "text": true }
+            "url": { "css": "#comic img", "value": "@src" },
+            "title": { "css": "#comic img", "value": "@title" },
+            "body_text": { "css": "div.main", "value": ".//text()" }
           }
+
+      "@_attr_" is the XPath expression to extract the value of an attribute named _attr_ from a node, and ".//text()" is to extract all the enclosed texts.  You can also use [XPath functions](http://www.w3.org/TR/xpath/#section-String-Functions) like `normalize-space` to strip and squeeze whitespace, `substring-after` to extract part of a text, and `translate` to remove comma from a formatted number, etc.  Note that these functions take a string, not a node set, so what you may think would be written as `normalize-text(.//text())` should actually be `normalize-text(.)`.
 
       When parsing JSON, these sub-hashes specify [JSONPaths](http://goessner.net/articles/JsonPath/) to the values that you care about.  For example:
 
@@ -36,6 +37,28 @@ module Agents
             "title": { "path": "results.data[*].title" },
             "description": { "path": "results.data[*].description" }
           }
+
+      When parsing text, each sub-hash should contain a `regexp` and `index`.  Output text is matched against the regular expression repeatedly from the beginning through to the end, collecting a captured group specified by `index` in each match.  Each index should be either an integer or a string name which corresponds to `(?<_name_>...)`.  For example, to parse lines of `_word_: _definition_`, the following should work:
+
+          "extract": {
+            "word": { "regexp": "^(.+?): (.+)$", index: 1 },
+            "definition": { "regexp": "^(.+?): (.+)$", index: 2 },
+          }
+
+      Or if you prefer names to numbers for index:
+
+          "extract": {
+            "word": { "regexp": "^(?<word>.+?): (?<definition>.+)$", index: 'word' },
+            "definition": { "regexp": "^(?<word>.+?): (?<definition>.+)$", index: 'definition' },
+          }
+
+      To extract the whole content as one event:
+
+          "extract": {
+            "content": { "regexp": "\A(?m:.)*\z", index: 0 },
+          }
+
+      Beware that `.` does not match the newline character (LF) unless the `m` flag is in effect, and `^`/`$` basically match every line beginning/end.  See [this document](http://ruby-doc.org/core-#{RUBY_VERSION}/doc/regexp_rdoc.html) to learn the regular expression variant used in this service.
 
       Note that for all of the formats, whatever you extract MUST have the same number of matches for each extractor.  E.g., if you're extracting rows, all extractors must match all rows.  For generating CSS selectors, something like [SelectorGadget](http://selectorgadget.com) may be helpful.
 
@@ -47,7 +70,7 @@ module Agents
 
       Set `force_encoding` to an encoding name if the website does not return a Content-Type header with a proper charset.
 
-      Set `user_agent` to a custom User-Agent name if the website does not like the default value ("Faraday v#{Faraday::VERSION}").
+      Set `user_agent` to a custom User-Agent name if the website does not like the default value (`#{default_user_agent}`).
 
       The `headers` field is optional.  When present, it should be a hash of headers to send with the request.
 
@@ -69,9 +92,9 @@ module Agents
           'type' => "html",
           'mode' => "on_change",
           'extract' => {
-            'url' => { 'css' => "#comic img", 'attr' => "src" },
-            'title' => { 'css' => "#comic img", 'attr' => "alt" },
-            'hovertext' => { 'css' => "#comic img", 'attr' => "title" }
+            'url' => { 'css' => "#comic img", 'value' => "@src" },
+            'title' => { 'css' => "#comic img", 'value' => "@alt" },
+            'hovertext' => { 'css' => "#comic img", 'value' => "@title" }
           }
       }
     end
@@ -109,19 +132,7 @@ module Agents
         end
       end
 
-      if options['user_agent'].present?
-        errors.add(:base, "user_agent must be a string") unless options['user_agent'].is_a?(String)
-      end
-
-      unless headers.is_a?(Hash)
-        errors.add(:base, "if provided, headers must be a hash")
-      end
-
-      begin
-        basic_auth_credentials()
-      rescue => e
-        errors.add(:base, e.message)
-      end
+      validate_web_request_options!
     end
 
     def check
@@ -149,7 +160,15 @@ module Agents
           else
             output = {}
             interpolated['extract'].each do |name, extraction_details|
-              if extraction_type == "json"
+              case extraction_type
+              when "text"
+                regexp = Regexp.new(extraction_details['regexp'])
+                result = []
+                doc.scan(regexp) {
+                  result << Regexp.last_match[extraction_details['index']]
+                }
+                log "Extracting #{extraction_type} at #{regexp}: #{result}"
+              when "json"
                 result = Utils.values_at(doc, extraction_details['path'])
                 log "Extracting #{extraction_type} at #{extraction_details['path']}: #{result}"
               else
@@ -163,20 +182,21 @@ module Agents
                   error '"css" or "xpath" is required for HTML or XML extraction'
                   return
                 end
-                unless Nokogiri::XML::NodeSet === nodes
+                case nodes
+                when Nokogiri::XML::NodeSet
+                  result = nodes.map { |node|
+                    case value = node.xpath(extraction_details['value'])
+                    when Float
+                      # Node#xpath() returns any numeric value as float;
+                      # convert it to integer as appropriate.
+                      value = value.to_i if value.to_i == value
+                    end
+                    value.to_s
+                  }
+                else
                   error "The result of HTML/XML extraction was not a NodeSet"
                   return
                 end
-                result = nodes.map { |node|
-                  if extraction_details['attr']
-                    node.attr(extraction_details['attr'])
-                  elsif extraction_details['text']
-                    node.text()
-                  else
-                    error '"attr" or "text" is required on HTML or XML extraction patterns'
-                    return
-                  end
-                }
                 log "Extracting #{extraction_type} at #{xpath || css}: #{result}"
               end
               output[name] = result
@@ -261,10 +281,13 @@ module Agents
 
     def extraction_type
       (interpolated['type'] || begin
-        if interpolated['url'] =~ /\.(rss|xml)$/i
+        case interpolated['url']
+        when /\.(rss|xml)$/i
           "xml"
-        elsif interpolated['url'] =~ /\.json$/i
+        when /\.json$/i
           "json"
+        when /\.(txt|text)$/i
+          "text"
         else
           "html"
         end
@@ -279,6 +302,8 @@ module Agents
           JSON.parse(data)
         when "html"
           Nokogiri::HTML(data)
+        when "text"
+          data
         else
           raise "Unknown extraction type #{extraction_type}"
       end
@@ -290,48 +315,6 @@ module Agents
       rescue
         false
       end
-    end
-
-    def faraday
-      @faraday ||= Faraday.new { |builder|
-        builder.headers = headers if headers.length > 0
-
-        if (user_agent = interpolated['user_agent']).present?
-          builder.headers[:user_agent] = user_agent
-        end
-
-        builder.use FaradayMiddleware::FollowRedirects
-        builder.request :url_encoded
-        if userinfo = basic_auth_credentials()
-          builder.request :basic_auth, *userinfo
-        end
-
-        case backend = faraday_backend
-        when :typhoeus
-          require 'typhoeus/adapters/faraday'
-        end
-        builder.adapter backend
-      }
-    end
-
-    def faraday_backend
-      ENV.fetch('FARADAY_HTTP_BACKEND', 'typhoeus').to_sym
-    end
-
-    def basic_auth_credentials
-      case value = interpolated['basic_auth']
-      when nil, ''
-        return nil
-      when Array
-        return value if value.size == 2
-      when /:/
-        return value.split(/:/, 2)
-      end
-      raise "bad value for basic_auth: #{value.inspect}"
-    end
-
-    def headers
-      interpolated['headers'].presence || {}
     end
   end
 end

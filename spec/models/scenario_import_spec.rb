@@ -3,6 +3,8 @@ require 'spec_helper'
 describe ScenarioImport do
   let(:user) { users(:bob) }
   let(:guid) { "somescenarioguid" }
+  let(:tag_fg_color) { "#ffffff" }
+  let(:tag_bg_color) { "#000000" }
   let(:description) { "This is a cool Huginn Scenario that does something useful!" }
   let(:name) { "A useful Scenario" }
   let(:source_url) { "http://example.com/scenarios/2/export.json" }
@@ -46,10 +48,12 @@ describe ScenarioImport do
     }
   end
   let(:valid_parsed_data) do
-    { 
+    {
       :name => name,
       :description => description,
       :guid => guid,
+      :tag_fg_color => tag_fg_color,
+      :tag_bg_color => tag_bg_color,
       :source_url => source_url,
       :exported_at => 2.days.ago.utc.iso8601,
       :agents => [
@@ -142,7 +146,7 @@ describe ScenarioImport do
       end
     end
   end
-  
+
   describe "#dangerous?" do
     it "returns false on most Agents" do
       ScenarioImport.new(:data => valid_data).should_not be_dangerous
@@ -171,8 +175,10 @@ describe ScenarioImport do
           scenario_import.scenario.name.should == name
           scenario_import.scenario.description.should == description
           scenario_import.scenario.guid.should == guid
+          scenario_import.scenario.tag_fg_color.should == tag_fg_color
+          scenario_import.scenario.tag_bg_color.should == tag_bg_color
           scenario_import.scenario.source_url.should == source_url
-          scenario_import.scenario.public.should be_false
+          scenario_import.scenario.public.should be_falsey
         end
 
         it "creates the Agents" do
@@ -186,7 +192,7 @@ describe ScenarioImport do
           weather_agent.name.should == "a weather agent"
           weather_agent.schedule.should == "5pm"
           weather_agent.keep_events_for.should == 14
-          weather_agent.propagate_immediately.should be_false
+          weather_agent.propagate_immediately.should be_falsey
           weather_agent.should be_disabled
           weather_agent.memory.should be_empty
           weather_agent.options.should == weather_agent_options
@@ -195,7 +201,7 @@ describe ScenarioImport do
           trigger_agent.sources.should == [weather_agent]
           trigger_agent.schedule.should be_nil
           trigger_agent.keep_events_for.should == 0
-          trigger_agent.propagate_immediately.should be_true
+          trigger_agent.propagate_immediately.should be_truthy
           trigger_agent.should_not be_disabled
           trigger_agent.memory.should be_empty
           trigger_agent.options.should == trigger_agent_options
@@ -269,10 +275,12 @@ describe ScenarioImport do
 
           existing_scenario.reload
           existing_scenario.guid.should == guid
+          existing_scenario.tag_fg_color.should == tag_fg_color
+          existing_scenario.tag_bg_color.should == tag_bg_color
           existing_scenario.description.should == description
           existing_scenario.name.should == name
           existing_scenario.source_url.should == source_url
-          existing_scenario.public.should be_false
+          existing_scenario.public.should be_falsey
         end
 
         it "updates any existing agents in the scenario, and makes new ones as needed" do
@@ -290,7 +298,7 @@ describe ScenarioImport do
           weather_agent.name.should == "a weather agent"
           weather_agent.schedule.should == "5pm"
           weather_agent.keep_events_for.should == 14
-          weather_agent.propagate_immediately.should be_false
+          weather_agent.propagate_immediately.should be_falsey
           weather_agent.should be_disabled
           weather_agent.memory.should be_empty
           weather_agent.options.should == weather_agent_options
@@ -299,7 +307,7 @@ describe ScenarioImport do
           trigger_agent.sources.should == [weather_agent]
           trigger_agent.schedule.should be_nil
           trigger_agent.keep_events_for.should == 0
-          trigger_agent.propagate_immediately.should be_true
+          trigger_agent.propagate_immediately.should be_truthy
           trigger_agent.should_not be_disabled
           trigger_agent.memory.should be_empty
           trigger_agent.options.should == trigger_agent_options
@@ -318,7 +326,7 @@ describe ScenarioImport do
 
           scenario_import.should be_valid
 
-          scenario_import.import.should be_true
+          scenario_import.import.should be_truthy
 
           weather_agent = existing_scenario.agents.find_by(:guid => "a-weather-agent")
           weather_agent.name.should == "updated name"
@@ -338,7 +346,7 @@ describe ScenarioImport do
             }
           }
 
-          scenario_import.import.should be_false
+          scenario_import.import.should be_falsey
 
           errors = scenario_import.errors.full_messages.to_sentence
           errors.should =~ /Name can't be blank/

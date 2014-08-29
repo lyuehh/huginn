@@ -103,13 +103,13 @@ ActiveRecord::Schema.define(version: 20140820003139) do
   add_index "scenario_memberships", ["scenario_id"], name: "index_scenario_memberships_on_scenario_id", using: :btree
 
   create_table "scenarios", force: true do |t|
-    t.string   "name",                        null: false
-    t.integer  "user_id",                     null: false
+    t.string   "name",                         null: false
+    t.integer  "user_id",                      null: false
     t.datetime "created_at"
     t.datetime "updated_at"
     t.text     "description"
-    t.boolean  "public",      default: false, null: false
-    t.string   "guid",                        null: false
+    t.boolean  "public",       default: false, null: false
+    t.string   "guid",                         null: false
     t.string   "source_url"
     t.string   "tag_bg_color"
     t.string   "tag_fg_color"

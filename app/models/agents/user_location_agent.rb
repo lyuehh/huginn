@@ -2,12 +2,12 @@ require 'securerandom'
 
 module Agents
   class UserLocationAgent < Agent
-    cannot_receive_events!
     cannot_be_scheduled!
 
     description do
       <<-MD
-        The UserLocationAgent creates events based on WebHook POSTS that contain a `latitude` and `longitude`.  You can use the POSTLocation iOS app to post your location.
+        The UserLocationAgent creates events based on WebHook POSTS that contain a `latitude` and `longitude`.  You can use the [POSTLocation](https://github.com/cantino/post_location) or [PostGPS](https://github.com/chriseidhof/PostGPS) iOS app to post your location.
+
 
         Your POST path will be `https://#{ENV['DOMAIN']}/users/#{user.id}/update_location/:secret` where `:secret` is specified in your options.
       MD
@@ -39,6 +39,38 @@ module Agents
 
     def validate_options
       errors.add(:base, "secret is required and must be longer than 4 characters") unless options['secret'].present? && options['secret'].length > 4
+    end
+
+    def receive(incoming_events)
+      incoming_events.each do |event|
+        interpolate_with(event) do
+          handle_payload event.payload
+        end
+      end
+    end
+
+    def receive_web_request(params, method, format)
+      params = params.symbolize_keys
+      if method != 'post'
+        return ['Not Found', 404]
+      end
+      if interpolated['secret'] != params[:secret]
+        return ['Not Authorized', 401]
+      end
+
+      handle_payload params.except(:secret)
+
+      return ['ok', 200]
+    end
+
+    private
+
+    def handle_payload(payload)
+      location = Location.new(payload)
+
+      if location.present?
+        create_event payload: payload, location: location
+      end
     end
   end
 end

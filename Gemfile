@@ -12,7 +12,8 @@ gem 'weibo_2', '~> 0.1.4'         # Weibo Agents
 gem 'hipchat', '~> 1.2.0'         # HipchatAgent
 gem 'xmpp4r',  '~> 0.5.6'         # JabberAgent
 gem 'mqtt'                        # MQTTAgent
-gem 'slack-notifier', '~> 0.5.0'  # SlackAgent
+gem 'slack-notifier', '~> 1.0.0'  # SlackAgent
+gem 'hypdf', '~> 1.0.7'           # PDFInfoAgent
 
 # GoogleCalendarPublishAgent
 gem "google-api-client", require: 'google/api_client'
@@ -70,13 +71,14 @@ gem 'kramdown', '~> 1.3.3'
 gem 'liquid', '~> 2.6.1'
 gem 'mysql2', '~> 0.3.16'
 gem 'multi_xml'
-gem 'nokogiri', '~> 1.6.1'
+gem 'nokogiri', '~> 1.6.4'
 gem 'omniauth'
-gem 'rails' , '4.1.5'
+gem 'rails' , '~> 4.1.7'
 gem 'rufus-scheduler', '~> 3.0.8', require: false
 gem 'sass-rails',   '~> 4.0.0'
 gem 'select2-rails', '~> 3.5.4'
 gem 'spectrum-rails'
+gem 'string-scrub'	# for ruby <2.1
 gem 'therubyracer', '~> 0.12.1'
 gem 'typhoeus', '~> 0.6.3'
 gem 'uglifier', '>= 1.3.0'
@@ -85,6 +87,9 @@ group :development do
   gem 'better_errors', '~> 1.1'
   gem 'binding_of_caller'
   gem 'quiet_assets'
+  gem 'guard'
+  gem 'guard-livereload'
+  gem 'guard-rspec'
 end
 
 group :development, :test do
@@ -96,6 +101,7 @@ group :development, :test do
   gem 'rspec', '~> 3.0'
   gem 'rspec-collection_matchers', '~> 1.0.0'
   gem 'rspec-rails', '~> 3.0.1'
+  gem 'rspec-html-matchers', '~> 0.6.1'
   gem 'shoulda-matchers'
   gem 'spring'
   gem 'spring-commands-rspec'

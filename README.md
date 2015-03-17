@@ -6,7 +6,7 @@ Huginn is a system for building agents that perform automated tasks for you onli
 
 ![the origin of the name](doc/imgs/the-name.png)
 
-#### We're just getting started, but here are some of the things that you can do with Huginn right now:
+#### Here are some of the things that you can do with Huginn right now:
 
 * Track the weather and get an email when it's going to rain (or snow) tomorrow ("Don't forget your umbrella!")
 * List terms that you care about and receive emails when their occurrence on Twitter changes.  (For example, want to know when something interesting has happened in the world of Machine Learning?  Huginn will watch the term "machine learning" on Twitter and tell you when there is a large spike.)
@@ -19,13 +19,15 @@ Huginn is a system for building agents that perform automated tasks for you onli
 * Send and receive WebHooks
 * Run arbitrary JavaScript Agents on the server
 * Track your location over time
-* Create Amazon Mechanical Turk workflows as the inputs, or outputs, of agents.  ("Once a day, ask 5 people for a funny cat photo; send the results to 5 more people to be rated; send the top-rated photo to 5 people for a funny caption; send to 5 final people to rate for funniest caption; finally, post the best captioned photo on my blog.")
+* Create Amazon Mechanical Turk workflows as the inputs, or outputs, of agents (the Amazon Turk Agent is called the "HumanTaskAgent"). For example: "Once a day, ask 5 people for a funny cat photo; send the results to 5 more people to be rated; send the top-rated photo to 5 people for a funny caption; send to 5 final people to rate for funniest caption; finally, post the best captioned photo on my blog."
 
-Follow [@tectonic](https://twitter.com/tectonic) for updates as Huginn evolves, and join us in [our IRC channel](https://kiwiirc.com/client/irc.freenode.net/?nick=huginn-user|?#huginn) (\#huginn on Freenode) to discuss the project.
+[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/cantino/huginn?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
+Follow [@tectonic](https://twitter.com/tectonic) for updates as Huginn evolves, and join us in our [Gitter room](https://gitter.im/cantino/huginn) to discuss the project.
 
 ### We need your help!
 
-Want to help with Huginn?  All contributions are encouraged!  You could make UI improvements, add new Agents, write documentation and tutorials, or try tackling [issues tagged with #help-wanted](https://github.com/cantino/huginn/issues?direction=desc&labels=help-wanted&page=1&sort=created&state=open).
+Want to help with Huginn?  All contributions are encouraged!  You could make UI improvements, [add new Agents](https://github.com/cantino/huginn/wiki/Creating-a-new-agent), write documentation and tutorials, or try tackling [issues tagged with #help-wanted](https://github.com/cantino/huginn/issues?direction=desc&labels=help-wanted&page=1&sort=created&state=open).
 
 Really want an issue fixed/feature implemented? Or maybe you just want to solve some community issues and earn some extra coffee money? Then you should take a look at the [current bounties on Bountysource](https://www.bountysource.com/trackers/282580-huginn).
 
@@ -56,8 +58,8 @@ If you just want to play around, you can simply fork this repository, then perfo
 * Run `git remote add upstream https://github.com/cantino/huginn.git` to add the main repository as a remote for your fork.
 * Copy `.env.example` to `.env` (`cp .env.example .env`) and edit `.env`, at least updating the `APP_SECRET_TOKEN` variable.
 * Run `bundle` to install dependencies
-* Run `rake db:create`, `rake db:migrate`, and then `rake db:seed` to create a development MySQL database with some example Agents.
-* Run `foreman start`, visit [http://localhost:3000/][localhost], and login with the username of `admin` and the password of `password`.
+* Run `bundle exec rake db:create`, `bundle exec rake db:migrate`, and then `bundle exec rake db:seed` to create a development MySQL database with some example Agents.
+* Run `bundle exec foreman start`, visit [http://localhost:3000/][localhost], and login with the username of `admin` and the password of `password`.
 * Setup some Agents!
 * Read the [wiki][wiki] for usage examples and to get started making new Agents.
 * Periodically run `git fetch upstream` and then `git checkout master && git merge upstream/master` to merge in the newest version of Huginn.
@@ -69,6 +71,10 @@ If you need more detailed instructions, see the [Novice setup guide][novice-setu
 [localhost]: http://localhost:3000/
 [wiki]: https://github.com/cantino/huginn/wiki
 [novice-setup-guide]: https://github.com/cantino/huginn/wiki/Novice-setup-guide
+
+### Develop
+
+All agents have specs! Test all specs with `bundle exec rspec`, or test a specific spec with `bundle exec rspec path/to/specific/spec.rb`. Read more about rspec for rails [here](https://github.com/rspec/rspec-rails).
 
 ## Deployment
 

@@ -8,7 +8,7 @@ gem 'net-ftp-list', '~> 3.2.8'    # FtpsiteAgent
 gem 'wunderground', '~> 1.2.0'    # WeatherAgent
 gem 'forecast_io', '~> 2.0.0'     # WeatherAgent
 gem 'rturk', '~> 2.12.1'          # HumanTaskAgent
-gem 'weibo_2', '~> 0.1.4'         # Weibo Agents
+gem 'weibo_2', '~> 0.1'         # Weibo Agents
 gem 'hipchat', '~> 1.2.0'         # HipchatAgent
 gem 'xmpp4r',  '~> 0.5.6'         # JabberAgent
 gem 'mqtt'                        # MQTTAgent
@@ -20,7 +20,7 @@ gem "google-api-client", require: 'google/api_client'
 
 # Twitter Agents
 gem 'twitter', '~> 5.8.0' # Must to be loaded before cantino-twitter-stream.
-gem 'cantino-twitter-stream', github: 'cantino/twitter-stream', branch: 'master'
+gem 'twitter-stream', github: 'dsander/twitter-stream', branch: 'huginn'
 gem 'omniauth-twitter'
 
 # Tumblr Agents
@@ -30,6 +30,9 @@ gem 'omniauth-tumblr'
 # Dropbox Agents
 gem 'dropbox-api'
 gem 'omniauth-dropbox'
+
+# UserLocationAgent
+gem 'haversine'
 
 # Optional Services.
 gem 'omniauth-37signals'          # BasecampAgent
@@ -73,7 +76,7 @@ gem 'mysql2', '~> 0.3.16'
 gem 'multi_xml'
 gem 'nokogiri', '~> 1.6.4'
 gem 'omniauth'
-gem 'rails' , '~> 4.1.7'
+gem 'rails' , '4.1.8'
 gem 'rufus-scheduler', '~> 3.0.8', require: false
 gem 'sass-rails',   '~> 4.0.0'
 gem 'select2-rails', '~> 3.5.4'
@@ -103,7 +106,7 @@ group :development, :test do
   gem 'rspec-rails', '~> 3.0.1'
   gem 'rspec-html-matchers', '~> 0.6.1'
   gem 'shoulda-matchers'
-  gem 'spring'
+  gem 'spring', '~> 1.3.2'
   gem 'spring-commands-rspec'
   gem 'vcr'
   gem 'webmock', '~> 1.17.4', require: false
@@ -123,10 +126,10 @@ gem 'tzinfo-data', platforms: [:mingw, :mswin, :x64_mingw]
 # This hack needs some explanation.  When on Heroku, use the pg, unicorn, and rails12factor gems.
 # When not on Heroku, we still want our Gemfile.lock to include these gems, so we scope them to
 # an unsupported platform.
-if ENV['ON_HEROKU'] || ENV['HEROKU_POSTGRESQL_ROSE_URL'] || File.read(File.join(File.dirname(__FILE__), 'Procfile')) =~ /intended for Heroku/
+if ENV['ON_HEROKU'] || ENV['HEROKU_POSTGRESQL_ROSE_URL'] || ENV['HEROKU_POSTGRESQL_GOLD_URL'] || File.read(File.join(File.dirname(__FILE__), 'Procfile')) =~ /intended for Heroku/
   gem 'pg'
   gem 'unicorn'
-  gem 'rails_12factor'
+  gem 'rails_12factor', group: :production
 else
   gem 'pg', platform: :ruby_18
   gem 'unicorn', platform: :ruby_18
